@@ -51,7 +51,7 @@ const GallerySection = () => {
   }, [selected, navigate]);
 
   return (
-    <section className="py-20 bg-background">
+    <section id="gallery" className="py-20 bg-background">
       <div className="container">
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center mb-12">
           <h2 className="font-display text-4xl md:text-5xl text-foreground">EVENT <span className="text-primary">GALLERY</span></h2>
