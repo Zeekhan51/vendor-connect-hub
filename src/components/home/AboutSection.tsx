@@ -34,11 +34,13 @@ const AboutSection = () => (
           viewport={{ once: true }}
           className="flex justify-center"
         >
-          <img
-            src={christinaImg}
-            alt="Christina - Owner of Triple C Events"
-            className="rounded-2xl shadow-xl w-full max-w-sm object-cover aspect-[3/4]"
-          />
+          <div className="w-full max-w-sm aspect-[3/4] rounded-2xl shadow-xl overflow-hidden">
+            <img
+              src={christinaImg}
+              alt="Christina - Owner of Triple C Events"
+              className="w-full h-full object-cover object-[center_35%]"
+            />
+          </div>
         </motion.div>
 
         <motion.div
