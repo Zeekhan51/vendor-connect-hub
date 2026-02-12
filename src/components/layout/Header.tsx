@@ -8,6 +8,7 @@ const navLinks = [
   { label: "Vendors", to: "/vendors" },
   { label: "Sponsors", to: "/sponsors" },
   { label: "Events", to: "/events" },
+  { label: "Gallery", to: "/#gallery" },
 ];
 
 const Header = () => {
