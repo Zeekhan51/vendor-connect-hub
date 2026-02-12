@@ -43,6 +43,7 @@ export default function GalleryManager() {
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-gallery"] }); toast({ title: "Image deleted" }); },
+    onError: (e: Error) => { toast({ title: "Delete failed", description: e.message, variant: "destructive" }); },
   });
 
   if (isLoading) return <p className="text-muted-foreground">Loading gallery...</p>;
@@ -64,7 +65,7 @@ export default function GalleryManager() {
           <div key={img.id} className="relative group">
             <img src={img.image_url} alt={img.alt_text || ""} className="w-full aspect-square object-cover rounded-lg" />
             <button onClick={() => deleteMutation.mutate(img.id)}
-              className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              className="absolute top-2 right-2 bg-destructive/80 text-destructive-foreground rounded-full p-1.5 shadow-md">
               <Trash2 size={14} />
             </button>
           </div>
