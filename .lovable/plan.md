@@ -1,160 +1,217 @@
 
 
-# Triple C Events - Major Update Plan
+# Admin Panel & Database Setup — Full Implementation Plan
 
 ## Overview
-This update adds vendor/sponsor application forms, animated countdown timers, full event listings from social media, Christina's photo, a gallery section, admin login in footer, and uses the uploaded images + brand info from Facebook.
+This update will set up **Lovable Cloud (Supabase)** as the backend and build a fully functional admin dashboard where the admin can manage vendors, sponsors, events, gallery images, and all homepage content. It also fixes Christina's image (crop to show only her face) and enhances sponsor/vendor benefits.
 
 ---
 
-## 1. Add Uploaded Images to Project
+## Phase 1: Enable Lovable Cloud & Database Setup
 
-Copy these images into `src/assets/`:
-- `FB_IMG_1770873465786.jpg` -> `christina-owner.jpg` (Christina/owner photo for About section)
-- `FB_IMG_1770873418005.jpg` -> `event-schedule-2.jpg` (Hop Into Spring schedule poster - Mar 22 to Apr 5)
-- `FB_IMG_1770873415932.jpg` -> `event-schedule-1.jpg` (Hop Into Spring schedule poster - Mar 1 to Mar 15)
-- `FB_IMG_1770871060584.jpg` -> `event-books-market.jpg` (Books & More Market poster)
-- `FB_IMG_1770869442821.jpg` -> `event-coffee-market.jpg` (Coffee Everything Market poster)
+### Database Tables
 
-The last uploaded image (M.Z Organic) appears to be a personal screenshot, not related to Triple C Events - will not be used.
+**vendors**
+- id, business_name, category, description, contact_name, phone, email, instagram, facebook, website, is_featured, is_approved, status (pending/approved/rejected), created_at
+
+**sponsors**
+- id, company_name, contact_person, email, phone, tier (gold/silver/bronze), message, logo_url, is_approved, status (pending/approved/rejected), created_at
+
+**events**
+- id, title, date, time_start, time_end, venue, address, description, ticket_link, image_url, is_past, created_at
+
+**gallery_images**
+- id, image_url, alt_text, display_order, created_at
+
+**site_content**
+- id, section_key (unique), title, subtitle, content (JSON), updated_at
+- For storing editable homepage text: hero title, vendor benefits, sponsor benefits/pricing, raffle info, contact info, etc.
+
+**vendor_images**
+- id, vendor_id (FK to vendors), image_url, display_order, created_at
+
+### Storage Buckets
+- **vendor-images** — Product photos (1-2 vertical images per vendor)
+- **sponsor-logos** — Sponsor company logos
+- **event-images** — Event flyer/poster images
+- **gallery** — Gallery section images
+
+### Authentication & Roles
+- Use Supabase Auth for admin login (replacing hardcoded credentials)
+- Create `user_roles` table with `app_role` enum (admin, user)
+- RLS policies: Admin can CRUD everything; public can read approved vendors, sponsors, events, gallery
+- Security definer function `has_role()` to check admin status
+
+### RLS Policies
+- Vendors table: Public SELECT where is_approved = true; Admin full access
+- Sponsors table: Public SELECT where is_approved = true; Admin full access
+- Events table: Public SELECT all; Admin full access
+- Gallery: Public SELECT; Admin INSERT/UPDATE/DELETE
+- Site content: Public SELECT; Admin UPDATE
+- Storage buckets: Public read on all; Admin upload/delete
 
 ---
 
-## 2. Vendor Application Form Page (`/vendors`)
+## Phase 2: Admin Dashboard (Full CRUD)
 
-Create `src/pages/Vendors.tsx` with:
-- Featured vendors section at top
-- All vendors listing
-- **Vendor Registration Form** with fields:
-  - Business name, category, description
-  - Contact: name, phone, email
-  - Social media links (Instagram, Facebook, website)
-  - Product image uploads (1-2 vertical images) - placeholder for now, actual upload needs storage
-- Form submits via `mailto:info@zeedigitalsolutions.com` (using a mailto link that opens email client with form data)
-- Zod validation on all fields
+Replace the empty admin dashboard with a tabbed interface containing:
 
-## 3. Sponsor Inquiry Form Page (`/sponsors`)
+### Tab 1: Dashboard Overview
+- Stats cards: Total vendors (pending/approved), Total sponsors, Upcoming events, Gallery images count
+- Recent vendor/sponsor applications list
 
-Create `src/pages/Sponsors.tsx` with:
-- Sponsorship tiers display (Gold, Silver, Bronze) with benefits
-- **Sponsor Inquiry Form** with fields:
-  - Company name, contact person, email, phone
-  - Desired tier selection (Gold/Silver/Bronze)
-  - Message/notes
-- Form submits via `mailto:info@zeedigitalsolutions.com`
-- Zod validation
+### Tab 2: Manage Vendors
+- Table listing all vendors with columns: Name, Category, Status, Featured, Actions
+- **Add Vendor** button — Form to manually add a vendor (name, category, description, contact info, social links, upload 1-2 product images)
+- **Edit Vendor** — Edit any vendor details, upload/replace images
+- **Approve/Reject** — For vendor applications submitted from the public form
+- **Mark as Featured** toggle — Featured vendors get special promotion
+- **Delete** vendor
 
-## 4. Animated Countdown Timer Component
+### Tab 3: Manage Sponsors
+- Table listing all sponsors with columns: Company, Tier, Status, Actions
+- **Add Sponsor** — Manually add with logo upload
+- **Edit Sponsor** — Edit details, change tier, replace logo
+- **Approve/Reject** — For sponsor inquiries
+- **Delete** sponsor
 
-Create `src/components/home/CountdownTimer.tsx`:
-- Beautiful animated countdown to the next upcoming event
-- Shows Days, Hours, Minutes, Seconds in flip-card or animated number style
-- Uses framer-motion for smooth animations
-- Placed prominently in the Upcoming Events section or Hero section
-- Auto-calculates from the next event date
+### Tab 4: Manage Events
+- List of all events (upcoming and past)
+- **Add Event** — Title, date, time, venue, description, ticket link, image upload (vertical format)
+- **Edit Event** — Update any field, replace image
+- **Mark as Past** — Move to past events section
+- **Delete** event
 
-## 5. Full Events Page with All Events (`/events`)
+### Tab 5: Gallery
+- Grid view of all gallery images
+- **Add Images** — Upload multiple images
+- **Delete Image** — Remove from gallery
+- **Reorder** — Drag or number-based ordering
 
-Create `src/pages/Events.tsx` with all the events from social media:
+### Tab 6: Site Content
+- Editable sections for homepage content:
+  - Hero section text (title, subtitle)
+  - Vendor benefits (list of benefit title + description pairs)
+  - Sponsor benefits & pricing per tier (Gold/Silver/Bronze benefits list)
+  - Featured vendor benefits description
+  - Raffle section text
+  - Contact information
 
-**Hop Into Spring Vendor Mall - March/April Schedule:**
-- March 1 - Artisan Market (9AM-3PM)
-- March 8 - Books & More Market (9AM-3PM)
-- March 15 - Everything Coffee (9AM-3PM)
-- March 22 - It's a Dog World (9AM-3PM)
-- March 29 - The Edible Experience (9AM-3PM)
-- April 1 - Fashion Frenzy (9AM-3PM)
+---
 
-Each event shows:
-- Event name, date, time, venue (The MilliUp Event Center)
-- Description from the flyers
-- Event image (vertical format option for admin later)
-- Ticket link to Eventbrite
-- Countdown timer for the next upcoming event
+## Phase 3: Enhanced Sponsor Benefits
 
-**Location info**: The MilliUp Event Center, 210 E. Trade Street # C-244 (Second Floor), Charlotte NC 28202
+Update sponsor tiers with richer benefits:
 
-## 6. Update Homepage - Upcoming Events Section
+**Gold Sponsor:**
+- Premium logo on ALL event materials (banners, flyers, tickets)
+- VIP booth placement at every event (best location)
+- Free vendor table at all events
+- Weekly social media spotlight posts
+- Homepage featured section with large logo
+- MC shoutouts throughout every event
+- VIP event tickets for sponsor team
+- Exclusive "Presented by" branding
+- Newsletter feature to all subscribers
 
-Update `UpcomingEvents.tsx`:
-- Replace single mock event with all the events from the schedule
-- Add animated countdown timer to the next upcoming event
-- Show event images from uploaded flyers
-- "View All Events" button linking to `/events`
+**Silver Sponsor:**
+- Logo on event banners and flyers
+- Priority booth placement
+- Bi-weekly social media posts
+- Website sponsors page with logo
+- MC shoutouts during events
+- Discounted vendor table fees
+- Event tickets for sponsor team
 
-## 7. "Meet the Owner" / About Section on Homepage
+**Bronze Sponsor:**
+- Logo on event programs and flyers
+- Monthly social media mention
+- Website sponsors page listing
+- MC acknowledgment during events
 
-Create `src/components/home/AboutSection.tsx`:
-- Christina's photo (from uploaded image)
-- Brief about Triple C Events
-- Services offered (from the flyer):
-  - 1:1 Business Coaching Sessions
-  - Customized Growth Strategies
-  - Branding & Marketing Guidance
-  - Social Media & Content Planning
-  - Door to Door Flyering
-  - Graphic Design (Flyers, Business Cards, etc.)
-  - Exclusive Workshops & Events
-- "Book Your Free Clarity Call" CTA
-- Facebook link: https://www.facebook.com/share/17uYBbGuyE/
+---
 
-## 8. Gallery Section on Homepage
+## Phase 4: Enhanced Featured Vendor Benefits
 
-Create `src/components/home/GallerySection.tsx`:
-- Grid of event images from uploaded flyers
-- Click to enlarge (lightbox modal)
-- Left/right navigation to swipe between images
-- Uses framer-motion for smooth transitions
-- "View More" link if many images
+Featured vendors (paid promotion) get:
+- Star badge and highlighted card on homepage
+- Top placement on vendors page
+- Social media spotlight posts
+- Featured in event newsletters
+- Premium booth location at events
+- Larger display space on website (product images prominently shown)
+- "Featured Vendor" announcement by MC at events
 
-## 9. Update Social Links
+---
 
-Update across the site:
-- Instagram: @triplecccevents_
-- Facebook: Triple Cha-nel (https://www.facebook.com/share/17uYBbGuyE/)
-- Phone: (704) 506-7253
-- Email: triplecccevents1@gmail.com
+## Phase 5: Update Public Pages
 
-## 10. Admin Login Button in Footer
+### Vendor Registration Form
+- Update to save directly to Supabase (status: pending) instead of mailto
+- Admin gets notified of new applications
 
-Update `Footer.tsx`:
-- Add small "Admin Login" text button at the bottom
-- Links to `/admin` route
-- Simple password-based login page at `/admin`:
-  - Email: info@zeedigitalsolutions.com
-  - Password: Care@2019
-  - For now, hardcoded check (will move to Supabase auth later)
-- After login, shows admin dashboard placeholder
+### Sponsor Inquiry Form
+- Update to save directly to Supabase (status: pending) instead of mailto
 
-## 11. Update App Routes
+### Homepage Sections
+- All sections (VendorBenefits, SponsorBenefits, FeaturedVendors, UpcomingEvents, Gallery, Raffle) read data from Supabase
+- Featured vendors show real data with product images and social links
+- Gallery shows images from Supabase storage with lightbox
 
-Add routes in `App.tsx`:
-- `/vendors` - Vendors page with registration form
-- `/sponsors` - Sponsors page with inquiry form
-- `/events` - Full events listing
-- `/admin` - Admin login page
+### Events Page
+- Read events from database
+- Admin-added events show with uploaded images
 
-## 12. Homepage Section Order Update
+---
 
-Update `Index.tsx` section order:
-1. HeroSection (with countdown to next event)
-2. AboutSection (Meet Christina / About Triple C Events)
-3. VendorBenefits
-4. SponsorBenefits
-5. FeaturedVendors
-6. UpcomingEvents (with countdown timer, all events)
-7. GallerySection (event photos lightbox)
-8. RaffleSection
-9. ContactSection
+## Phase 6: Christina's Image Fix
+
+- Crop the owner image (`christina-owner.jpg`) to show only Christina's face clearly, removing the promotional text/overlay from the top of the image
+- Use CSS `object-position` and `object-fit` to focus on her face area
 
 ---
 
 ## Technical Details
 
-- **Form submission**: Using `mailto:info@zeedigitalsolutions.com` with form data encoded in the email body. This opens the user's email client with pre-filled data.
-- **Countdown timer**: Uses `setInterval` with 1-second updates, calculates difference from current time to next event date.
-- **Gallery lightbox**: Custom modal with framer-motion AnimatePresence for enter/exit animations, keyboard navigation (arrow keys, Escape).
-- **Admin auth**: Simple hardcoded check for now. Will be replaced with Supabase auth in the next phase.
-- **Event images**: The uploaded flyer images will be used as event images. Each event entry supports a vertical image field.
-- **No new dependencies needed** - everything uses existing framer-motion, lucide-react, react-router-dom, and shadcn/ui components.
+### File Changes Summary
+
+**New Files:**
+- `src/integrations/supabase/` — Auto-generated client and types
+- `src/components/admin/AdminDashboard.tsx` — Main admin layout with tabs
+- `src/components/admin/VendorManager.tsx` — Vendor CRUD with image uploads
+- `src/components/admin/SponsorManager.tsx` — Sponsor CRUD with logo upload
+- `src/components/admin/EventManager.tsx` — Event CRUD with image upload
+- `src/components/admin/GalleryManager.tsx` — Gallery image management
+- `src/components/admin/SiteContentEditor.tsx` — Homepage content editor
+- `src/hooks/useAdmin.ts` — Admin auth hook
+- `src/hooks/useVendors.ts` — Vendor data queries
+- `src/hooks/useSponsors.ts` — Sponsor data queries
+- `src/hooks/useEvents.ts` — Event data queries
+- `src/hooks/useGallery.ts` — Gallery data queries
+- `src/hooks/useSiteContent.ts` — Site content queries
+
+**Modified Files:**
+- `src/pages/Admin.tsx` — Replace with Supabase auth + full dashboard
+- `src/pages/Vendors.tsx` — Form saves to DB, reads vendors from DB
+- `src/pages/Sponsors.tsx` — Form saves to DB, reads sponsors from DB
+- `src/pages/Events.tsx` — Reads events from DB
+- `src/components/home/FeaturedVendors.tsx` — Reads from DB
+- `src/components/home/UpcomingEvents.tsx` — Reads from DB
+- `src/components/home/GallerySection.tsx` — Reads from DB
+- `src/components/home/VendorBenefits.tsx` — Reads editable content from DB
+- `src/components/home/SponsorBenefits.tsx` — Reads editable content from DB, enhanced benefits
+- `src/components/home/AboutSection.tsx` — Fix Christina image crop
+
+### Dependencies
+- No new npm packages needed (Supabase client auto-configured by Lovable Cloud)
+
+### Migration Sequence
+1. Create enum types (app_role)
+2. Create base tables (vendors, sponsors, events, gallery_images, site_content, vendor_images)
+3. Create user_roles table
+4. Create has_role() security definer function
+5. Create storage buckets
+6. Set up RLS policies on all tables and storage
+7. Seed initial site_content data (current hardcoded values)
+8. Create admin user account
 
