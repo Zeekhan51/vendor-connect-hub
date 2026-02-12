@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,13 +11,14 @@ import type { Json } from "@/integrations/supabase/types";
 export default function SiteContentEditor() {
   const qc = useQueryClient();
 
-  const { data: sections = [], isLoading } = useQuery({
+  const { data: sections = [], isLoading, error } = useQuery({
     queryKey: ["admin-site-content"],
     queryFn: async () => {
       const { data, error } = await supabase.from("site_content").select("*");
       if (error) throw error;
       return data;
     },
+    retry: 1,
   });
 
   const saveMutation = useMutation({
@@ -30,6 +31,7 @@ export default function SiteContentEditor() {
   });
 
   if (isLoading) return <p className="text-muted-foreground">Loading content...</p>;
+  if (error) return <p className="text-destructive">Failed to load content. Please reload the page.</p>;
 
   return (
     <div className="space-y-8">

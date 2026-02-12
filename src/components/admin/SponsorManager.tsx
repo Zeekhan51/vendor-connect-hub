@@ -22,13 +22,14 @@ export default function SponsorManager() {
   const [open, setOpen] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
 
-  const { data: sponsors = [], isLoading } = useQuery({
+  const { data: sponsors = [], isLoading, error } = useQuery({
     queryKey: ["admin-sponsors"],
     queryFn: async () => {
       const { data, error } = await supabase.from("sponsors").select("*").order("created_at", { ascending: false });
       if (error) throw error;
       return data as Sponsor[];
     },
+    retry: 1,
   });
 
   const saveMutation = useMutation({
@@ -83,6 +84,7 @@ export default function SponsorManager() {
   const statusColor = { pending: "bg-yellow-500/20 text-yellow-700", approved: "bg-green-500/20 text-green-700", rejected: "bg-red-500/20 text-red-700" };
 
   if (isLoading) return <p className="text-muted-foreground">Loading sponsors...</p>;
+  if (error) return <p className="text-destructive">Failed to load sponsors. Please reload the page.</p>;
 
   return (
     <div className="space-y-4">

@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Facebook, Phone, Briefcase, Palette, Users, Megaphone, Calendar, BookOpen, PenTool } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import christinaImg from "@/assets/christina-owner.jpg";
+import christinaImg from "@/assets/christi.jpg";
 
 const services = [
   { icon: Briefcase, label: "1:1 Business Coaching Sessions" },
