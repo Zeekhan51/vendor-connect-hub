@@ -53,8 +53,8 @@ export function useAdmin() {
 
     // Safety timeout - never stay loading forever
     const timeout = setTimeout(() => {
-      if (isMounted && loading) setLoading(false);
-    }, 5000);
+      if (isMounted) setLoading(false);
+    }, 2000);
 
     return () => {
       isMounted = false;

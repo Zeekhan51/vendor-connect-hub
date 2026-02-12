@@ -24,13 +24,14 @@ export default function VendorManager() {
   const [open, setOpen] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
 
-  const { data: vendors = [], isLoading } = useQuery({
+  const { data: vendors = [], isLoading, error } = useQuery({
     queryKey: ["admin-vendors"],
     queryFn: async () => {
       const { data, error } = await supabase.from("vendors").select("*").order("created_at", { ascending: false });
       if (error) throw error;
       return data as Vendor[];
     },
+    retry: 1,
   });
 
   const { data: vendorImages = [] } = useQuery({
@@ -125,6 +126,7 @@ export default function VendorManager() {
   const statusColor = { pending: "bg-yellow-500/20 text-yellow-700", approved: "bg-green-500/20 text-green-700", rejected: "bg-red-500/20 text-red-700" };
 
   if (isLoading) return <p className="text-muted-foreground">Loading vendors...</p>;
+  if (error) return <p className="text-destructive">Failed to load vendors. Please reload the page.</p>;
 
   return (
     <div className="space-y-4">

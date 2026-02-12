@@ -21,13 +21,14 @@ export default function EventManager() {
   const [open, setOpen] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const { data: events = [], isLoading } = useQuery({
+  const { data: events = [], isLoading, error } = useQuery({
     queryKey: ["admin-events"],
     queryFn: async () => {
       const { data, error } = await supabase.from("events").select("*").order("date", { ascending: true });
       if (error) throw error;
       return data as Event[];
     },
+    retry: 1,
   });
 
   const saveMutation = useMutation({
@@ -79,6 +80,7 @@ export default function EventManager() {
   }
 
   if (isLoading) return <p className="text-muted-foreground">Loading events...</p>;
+  if (error) return <p className="text-destructive">Failed to load events. Please reload the page.</p>;
 
   return (
     <div className="space-y-4">

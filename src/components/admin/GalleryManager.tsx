@@ -26,15 +26,19 @@ export default function GalleryManager() {
       setUploading(true);
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
+        if (file.size > 5 * 1024 * 1024) {
+          throw new Error(`File "${file.name}" exceeds 5MB limit`);
+        }
         const path = `${Date.now()}-${file.name}`;
         const { error: uploadErr } = await supabase.storage.from("gallery").upload(path, file);
-        if (uploadErr) throw uploadErr;
+        if (uploadErr) throw new Error(`Upload failed for "${file.name}": ${uploadErr.message}`);
         const { data } = supabase.storage.from("gallery").getPublicUrl(path);
-        await supabase.from("gallery_images").insert({ image_url: data.publicUrl, alt_text: file.name, display_order: images.length + i });
+        const { error: insertErr } = await supabase.from("gallery_images").insert({ image_url: data.publicUrl, alt_text: file.name, display_order: images.length + i });
+        if (insertErr) throw new Error(`Save failed for "${file.name}": ${insertErr.message}`);
       }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-gallery"] }); toast({ title: "Images uploaded" }); setFiles(null); setUploading(false); },
-    onError: (e: Error) => { toast({ title: "Error", description: e.message, variant: "destructive" }); setUploading(false); },
+    onError: (e: Error) => { toast({ title: "Upload failed", description: e.message, variant: "destructive" }); setUploading(false); },
   });
 
   const deleteMutation = useMutation({
