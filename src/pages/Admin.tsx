@@ -1,11 +1,38 @@
-import { useState } from "react";
+import { useState, Component, ReactNode } from "react";
 import { motion } from "framer-motion";
-import { Lock, LayoutDashboard, Loader2 } from "lucide-react";
+import { Lock, LayoutDashboard, Loader2, AlertTriangle } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAdmin } from "@/hooks/useAdmin";
 import AdminDashboard from "@/components/admin/AdminDashboard";
+
+class AdminErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Layout>
+          <section className="py-20 bg-background">
+            <div className="container max-w-md text-center">
+              <AlertTriangle size={40} className="mx-auto text-destructive mb-4" />
+              <h1 className="font-display text-3xl text-foreground mb-2">SOMETHING WENT WRONG</h1>
+              <p className="text-muted-foreground mb-4">An error occurred loading this page.</p>
+              <Button variant="outline" onClick={() => window.location.reload()} className="font-display">Reload Page</Button>
+            </div>
+          </section>
+        </Layout>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const Admin = () => {
   const { user, isAdmin, loading, signIn, signOut } = useAdmin();
@@ -96,4 +123,10 @@ const Admin = () => {
   );
 };
 
-export default Admin;
+const AdminWithBoundary = () => (
+  <AdminErrorBoundary>
+    <Admin />
+  </AdminErrorBoundary>
+);
+
+export default AdminWithBoundary;

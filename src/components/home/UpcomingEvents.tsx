@@ -27,7 +27,7 @@ const UpcomingEvents = () => {
   if (events.length === 0) return null;
 
   return (
-    <section className="py-20 bg-card">
+    <section id="events" className="py-20 bg-card">
       <div className="container">
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center mb-8">
           <h2 className="font-display text-4xl md:text-5xl text-foreground">UPCOMING <span className="text-primary">EVENTS</span></h2>
