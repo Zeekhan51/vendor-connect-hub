@@ -1,60 +1,77 @@
 
+# Complete Bug Fix: Admin Panel, Events Navigation, Gallery & Owner Image
 
-# Fix: Gallery Issues, Events Section & Admin Stability
+## Issues Identified
 
-## Issues Found
+1. **Admin panel tabs stuck on "Loading..."** -- The admin queries for events, vendors, sponsors, site content, and gallery ALL work correctly (RLS policies are fine, data exists in DB). The "Loading..." issue is caused by the **useAdmin hook's 5-second delay** before resolving. During this time, the page shows a spinner. After the timeout, if Lovable's preview auth is detected (non-admin user), it shows "ACCESS DENIED" instead of the login form. The actual user likely sees either a stuck spinner or the login form but then after login, the admin queries work fine. However, the `isLoading` state in each manager component shows "Loading vendors/sponsors/events..." text indefinitely if there's a query error or slow connection with no timeout.
 
-### 1. Gallery Delete Not Working on Mobile
-The delete button on gallery images uses `group-hover:opacity-100` which only works with mouse hover -- on mobile/touch devices, this button is invisible and untouchable. This is why you can't delete images.
+2. **Events/Gallery hash links don't scroll** -- React Router's `<Link to="/#events">` does NOT handle hash-based scrolling. It changes the URL but doesn't scroll to the element. Need to implement actual scroll-to-anchor behavior.
 
-### 2. Gallery Upload Error Handling
-The upload mutation doesn't show clear errors when something goes wrong. If there's a storage size limit or network issue, you get no feedback.
+3. **Gallery upload stuck on "Uploading..."** -- The storage policies are correct. The upload mutation calls `setUploading(true)` but if there's an error, it might not reset properly. Also the `onSuccess` resets uploading but there could be silent failures. Need better error handling and upload feedback.
 
-### 3. Events Table is Empty
-The events database table has **zero events** in it. When the code was switched from hardcoded data to database-driven, the old hardcoded events were removed but no events were inserted into the database. That's why:
-- The "Events" menu button scrolls to nothing (the section hides itself when empty)
-- The admin panel Events tab correctly shows "No events yet"
+4. **Gallery images not showing on homepage** -- The GallerySection component correctly queries `gallery_images` and falls back to hardcoded images if none exist. There IS 1 image in the DB but if it failed to upload to storage, the URL would be broken. Need to verify and ensure proper fallback.
 
-### 4. Events Section Hides When Empty
-The UpcomingEvents component returns `null` when there are no events, so the `#events` anchor doesn't exist and the menu link has nowhere to scroll to.
+5. **Owner image needs replacing** -- The uploaded `christi.jpg` needs to replace the current `christina-owner.jpg` in the About section.
+
+6. **No events showing on homepage** -- Events ARE in the database (6 records). The homepage query returns them successfully (verified via network logs). This should be working now. If it wasn't before, it was because the events were just inserted.
 
 ---
 
 ## Fixes
 
-### File: `src/components/admin/GalleryManager.tsx`
-- Make the delete button **always visible** (not hidden behind hover) so it works on mobile/touch devices
-- Add better error toast messages for upload failures
+### 1. Hash Scroll Navigation (Header.tsx)
+- Replace `<Link>` with `<a>` tags for hash links (`/#events`, `/#gallery`)  
+- OR add a `useEffect` in App.tsx that listens for hash changes and scrolls to the element
+- Implement smooth scroll behavior when clicking Events/Gallery nav links
 
-### File: `src/components/home/UpcomingEvents.tsx`
-- Always render the section with the `id="events"` anchor, even when events list is empty
-- Show a message like "No upcoming events -- check back soon!" when the database has no events
-- This ensures the menu "Events" link always has a target to scroll to
+### 2. Owner Image Replacement (AboutSection.tsx)
+- Copy `user-uploads://christi.jpg` to `src/assets/christi.jpg`
+- Update the import in AboutSection.tsx from `christina-owner.jpg` to `christi.jpg`
 
-### Pre-populate Events Database
-- Insert the recurring Sunday market events (March-April schedule) into the events table so they show up immediately on the homepage and in the admin panel for editing
+### 3. Admin Panel Reliability (useAdmin.ts)
+- Reduce the safety timeout from 5 seconds to 2 seconds
+- Fix the stale closure bug where `loading` in setTimeout always reads `true`
+- Ensure login form appears immediately when no session exists
 
-### File: `src/pages/Admin.tsx`
-- No changes needed -- admin login is working correctly (verified by testing). The white page was a temporary Vite server restart issue that has been resolved with the error boundary already in place.
+### 4. Gallery Upload Error Handling (GalleryManager.tsx)
+- Add explicit try/catch around each upload step
+- Show specific error messages for storage upload failures
+- Ensure uploading state resets on ALL error paths
+- Add file size validation before upload
+
+### 5. Smooth Scroll Component (App.tsx or new utility)
+- Add a `ScrollToHash` component inside BrowserRouter that handles `/#events` and `/#gallery` navigation
+- Implements `useEffect` + `useLocation` to detect hash changes and scroll to elements
 
 ---
 
 ## Technical Details
 
-### GalleryManager.tsx Changes
-- Remove `opacity-0 group-hover:opacity-100` from the delete button
-- Replace with always-visible styling with a semi-transparent background
-- Add `onError` handler to `deleteMutation` for error feedback
+### Header.tsx
+- For hash links, use `onClick` handlers that manually scroll to elements instead of relying on react-router Link:
+```tsx
+// For /#events and /#gallery links
+onClick={(e) => {
+  if (window.location.pathname === '/') {
+    e.preventDefault();
+    document.getElementById('events')?.scrollIntoView({ behavior: 'smooth' });
+  }
+}}
+```
 
-### UpcomingEvents.tsx Changes  
-- Remove the `if (events.length === 0) return null;` line
-- Add an empty-state message inside the section so the anchor point always exists
+### useAdmin.ts
+- Fix timeout to use a ref or direct check instead of stale closure
+- Reduce timeout to 2 seconds for faster feedback
 
-### Database: Insert Events
-Use the data insertion tool to add events like:
-- "Hop Into Spring Vendor Mall" for each upcoming Sunday
-- With venue "The MilliUp Event Center", time 9AM-3PM
-- Include Eventbrite ticket links if available
+### GalleryManager.tsx  
+- Wrap individual file uploads in try/catch
+- Add toast notification for each failed upload with specific error
+- Add 5MB max file size check before upload attempt
 
-### No schema changes needed.
+### AboutSection.tsx
+- Update import to use new christi.jpg image
 
+### App.tsx
+- Add `ScrollToHash` component that uses `useLocation()` hook to detect hash changes and scroll to matching elements with smooth behavior
+
+### No database or RLS changes needed -- all policies and data are correct.
