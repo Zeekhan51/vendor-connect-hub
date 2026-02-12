@@ -24,8 +24,6 @@ const UpcomingEvents = () => {
   const now = new Date();
   const nextEvent = events.find((e) => new Date(e.date + "T23:59:59") > now) || events[0];
 
-  if (events.length === 0) return null;
-
   return (
     <section id="events" className="py-20 bg-card">
       <div className="container">
