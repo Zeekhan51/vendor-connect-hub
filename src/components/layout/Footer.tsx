@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Instagram, Facebook, Phone, Mail } from "lucide-react";
+import { Instagram, Facebook, Phone, Mail, Lock } from "lucide-react";
 
 const Footer = () => (
   <footer className="bg-foreground text-primary-foreground/80 py-12">
@@ -32,14 +32,17 @@ const Footer = () => (
           <a href="https://instagram.com/triplecccevents_" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-primary transition-colors">
             <Instagram size={16} /> @triplecccevents_
           </a>
-          <a href="https://facebook.com/TripleCha-nel" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-primary transition-colors">
+          <a href="https://www.facebook.com/share/17uYBbGuyE/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-primary transition-colors">
             <Facebook size={16} /> Triple Cha-nel
           </a>
         </div>
       </div>
     </div>
-    <div className="container mt-8 pt-6 border-t border-primary-foreground/10 text-center text-xs text-primary-foreground/40">
-      © {new Date().getFullYear()} Triple C Events. All rights reserved.
+    <div className="container mt-8 pt-6 border-t border-primary-foreground/10 flex items-center justify-between text-xs text-primary-foreground/40">
+      <span>© {new Date().getFullYear()} Triple C Events. All rights reserved.</span>
+      <Link to="/admin" className="flex items-center gap-1 hover:text-primary transition-colors">
+        <Lock size={12} /> Admin
+      </Link>
     </div>
   </footer>
 );
