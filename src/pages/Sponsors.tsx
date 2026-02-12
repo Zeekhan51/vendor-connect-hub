@@ -3,12 +3,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion } from "framer-motion";
 import { Crown, Award, Medal, Send } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
 
 const sponsorSchema = z.object({
   companyName: z.string().trim().min(2, "Company name is required").max(100),
@@ -27,21 +30,44 @@ const tiers = [
     icon: Crown,
     color: "text-secondary",
     bg: "bg-secondary/10 border-secondary/30",
-    benefits: ["Premium logo placement on all materials", "VIP booth at every event", "Social media spotlight (weekly)", "Featured on website homepage", "Free vendor table at all events"],
+    benefits: [
+      "Premium logo on ALL event materials (banners, flyers, tickets)",
+      "VIP booth placement at every event (best location)",
+      "Free vendor table at all events",
+      "Weekly social media spotlight posts",
+      "Homepage featured section with large logo",
+      "MC shoutouts throughout every event",
+      "VIP event tickets for sponsor team",
+      "Exclusive \"Presented by\" branding",
+      "Newsletter feature to all subscribers",
+    ],
   },
   {
     name: "Silver",
     icon: Award,
     color: "text-muted-foreground",
     bg: "bg-muted border-muted-foreground/20",
-    benefits: ["Logo on event banners & flyers", "Social media shoutouts (bi-weekly)", "Listed on website sponsors page", "Discounted vendor table at events"],
+    benefits: [
+      "Logo on event banners and flyers",
+      "Priority booth placement",
+      "Bi-weekly social media posts",
+      "Website sponsors page with logo",
+      "MC shoutouts during events",
+      "Discounted vendor table fees",
+      "Event tickets for sponsor team",
+    ],
   },
   {
     name: "Bronze",
     icon: Medal,
     color: "text-primary",
     bg: "bg-primary/10 border-primary/30",
-    benefits: ["Logo on event programs", "Social media mention (monthly)", "Listed on website sponsors page"],
+    benefits: [
+      "Logo on event programs and flyers",
+      "Monthly social media mention",
+      "Website sponsors page listing",
+      "MC acknowledgment during events",
+    ],
   },
 ];
 
@@ -51,13 +77,24 @@ const Sponsors = () => {
     defaultValues: { companyName: "", contactPerson: "", email: "", phone: "", tier: "", message: "" },
   });
 
-  const onSubmit = (data: SponsorForm) => {
-    const body = Object.entries(data)
-      .filter(([, v]) => v)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join("\n");
-    window.location.href = `mailto:info@zeedigitalsolutions.com?subject=${encodeURIComponent("Sponsorship Inquiry: " + data.companyName)}&body=${encodeURIComponent(body)}`;
-  };
+  const submitMutation = useMutation({
+    mutationFn: async (data: SponsorForm) => {
+      const { error } = await supabase.from("sponsors").insert({
+        company_name: data.companyName,
+        contact_person: data.contactPerson,
+        email: data.email,
+        phone: data.phone,
+        tier: data.tier.toLowerCase() as "gold" | "silver" | "bronze",
+        message: data.message || "",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Inquiry Submitted!", description: "We'll reach out with sponsorship details soon." });
+      form.reset();
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
 
   return (
     <Layout>
@@ -68,7 +105,6 @@ const Sponsors = () => {
         </div>
       </section>
 
-      {/* Tiers */}
       <section className="py-16 bg-card">
         <div className="container">
           <h2 className="font-display text-3xl text-center mb-10">SPONSORSHIP <span className="text-primary">TIERS</span></h2>
@@ -93,7 +129,6 @@ const Sponsors = () => {
         </div>
       </section>
 
-      {/* Inquiry Form */}
       <section className="py-20 bg-background">
         <div className="container max-w-2xl">
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
@@ -101,7 +136,7 @@ const Sponsors = () => {
             <p className="text-center text-muted-foreground mb-8">Interested in sponsoring? Fill out the form and we'll reach out with details!</p>
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+              <form onSubmit={form.handleSubmit((d) => submitMutation.mutate(d))} className="space-y-5">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <FormField control={form.control} name="companyName" render={({ field }) => (
                     <FormItem><FormLabel>Company Name *</FormLabel><FormControl><Input placeholder="Your Company" {...field} /></FormControl><FormMessage /></FormItem>
@@ -133,8 +168,8 @@ const Sponsors = () => {
                 <FormField control={form.control} name="message" render={({ field }) => (
                   <FormItem><FormLabel>Message (Optional)</FormLabel><FormControl><Textarea placeholder="Any questions or notes..." {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
-                <Button type="submit" size="lg" className="w-full font-display text-lg tracking-wider">
-                  <Send size={18} className="mr-2" /> Submit Inquiry
+                <Button type="submit" size="lg" className="w-full font-display text-lg tracking-wider" disabled={submitMutation.isPending}>
+                  <Send size={18} className="mr-2" /> {submitMutation.isPending ? "Submitting..." : "Submit Inquiry"}
                 </Button>
               </form>
             </Form>

@@ -1,62 +1,64 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { motion } from "framer-motion";
-import { Lock, LayoutDashboard } from "lucide-react";
+import { Lock, LayoutDashboard, Loader2 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-
-const loginSchema = z.object({
-  email: z.string().email("Valid email required"),
-  password: z.string().min(1, "Password is required"),
-});
-
-const ADMIN_EMAIL = "info@zeedigitalsolutions.com";
-const ADMIN_PASSWORD = "Care@2019";
+import { useAdmin } from "@/hooks/useAdmin";
+import AdminDashboard from "@/components/admin/AdminDashboard";
 
 const Admin = () => {
-  const [loggedIn, setLoggedIn] = useState(false);
+  const { user, isAdmin, loading, signIn, signOut } = useAdmin();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const form = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
-  });
-
-  const onSubmit = (data: z.infer<typeof loginSchema>) => {
-    if (data.email === ADMIN_EMAIL && data.password === ADMIN_PASSWORD) {
-      setLoggedIn(true);
-      setError("");
-    } else {
-      setError("Invalid email or password");
-    }
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError("");
+    const err = await signIn(email, password);
+    if (err) setError(err.message);
+    setSubmitting(false);
   };
 
-  if (loggedIn) {
+  if (loading) {
+    return (
+      <Layout>
+        <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" size={40} /></div>
+      </Layout>
+    );
+  }
+
+  if (user && isAdmin) {
+    return (
+      <Layout>
+        <section className="py-10 bg-background min-h-screen">
+          <div className="container">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <LayoutDashboard size={32} className="text-primary" />
+                <h1 className="font-display text-3xl text-foreground">ADMIN DASHBOARD</h1>
+              </div>
+              <Button variant="outline" onClick={signOut} className="font-display">Logout</Button>
+            </div>
+            <AdminDashboard />
+          </div>
+        </section>
+      </Layout>
+    );
+  }
+
+  if (user && !isAdmin) {
     return (
       <Layout>
         <section className="py-20 bg-background">
-          <div className="container max-w-4xl">
-            <div className="flex items-center gap-3 mb-8">
-              <LayoutDashboard size={32} className="text-primary" />
-              <h1 className="font-display text-4xl text-foreground">ADMIN DASHBOARD</h1>
-            </div>
-            <div className="grid sm:grid-cols-3 gap-6">
-              {["Manage Vendors", "Manage Sponsors", "Manage Events"].map((item) => (
-                <div key={item} className="bg-card border border-border rounded-lg p-6 text-center">
-                  <h3 className="font-display text-xl text-foreground mb-2">{item}</h3>
-                  <p className="text-sm text-muted-foreground">Coming soon with Lovable Cloud</p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-8 text-center">
-              <Button variant="outline" onClick={() => setLoggedIn(false)} className="font-display tracking-wider">
-                Logout
-              </Button>
-            </div>
+          <div className="container max-w-md text-center">
+            <Lock size={40} className="mx-auto text-destructive mb-4" />
+            <h1 className="font-display text-3xl text-foreground mb-2">ACCESS DENIED</h1>
+            <p className="text-muted-foreground mb-4">This account does not have admin privileges.</p>
+            <Button variant="outline" onClick={signOut} className="font-display">Logout</Button>
           </div>
         </section>
       </Layout>
@@ -73,17 +75,20 @@ const Admin = () => {
               <h1 className="font-display text-3xl text-foreground">ADMIN LOGIN</h1>
             </div>
             {error && <p className="text-sm text-destructive text-center mb-4">{error}</p>}
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField control={form.control} name="email" render={({ field }) => (
-                  <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="admin@email.com" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="password" render={({ field }) => (
-                  <FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <Button type="submit" className="w-full font-display text-lg tracking-wider">Login</Button>
-              </form>
-            </Form>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Email</label>
+                <Input type="email" placeholder="admin@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Password</label>
+                <Input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              </div>
+              <Button type="submit" className="w-full font-display text-lg tracking-wider" disabled={submitting}>
+                {submitting ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
+                Login
+              </Button>
+            </form>
           </motion.div>
         </div>
       </section>

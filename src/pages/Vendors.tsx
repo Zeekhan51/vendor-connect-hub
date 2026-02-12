@@ -4,13 +4,16 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion } from "framer-motion";
-import { Star, Send, Instagram, Facebook, Globe, Phone, Mail } from "lucide-react";
+import { Star, Send, Instagram, Facebook, Globe } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
 
 const vendorSchema = z.object({
   businessName: z.string().trim().min(2, "Business name is required").max(100),
@@ -26,22 +29,7 @@ const vendorSchema = z.object({
 
 type VendorForm = z.infer<typeof vendorSchema>;
 
-const categories = [
-  "Artisan / Handmade",
-  "Food & Beverages",
-  "Fashion & Accessories",
-  "Books & Media",
-  "Health & Beauty",
-  "Pet Products",
-  "Home & Décor",
-  "Other",
-];
-
-const mockVendors = [
-  { name: "Sweet Treats Bakery", category: "Food & Beverages", featured: true },
-  { name: "Handmade Haven", category: "Artisan / Handmade", featured: true },
-  { name: "Trendy Threads", category: "Fashion & Accessories", featured: false },
-];
+const categories = ["Artisan / Handmade", "Food & Beverages", "Fashion & Accessories", "Books & Media", "Health & Beauty", "Pet Products", "Home & Décor", "Other"];
 
 const Vendors = () => {
   const location = useLocation();
@@ -50,23 +38,57 @@ const Vendors = () => {
     defaultValues: { businessName: "", category: "", description: "", contactName: "", phone: "", email: "", instagram: "", facebook: "", website: "" },
   });
 
+  const { data: approvedVendors = [] } = useQuery({
+    queryKey: ["public-vendors"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("vendors").select("*").eq("status", "approved").order("is_featured", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: vendorImages = [] } = useQuery({
+    queryKey: ["public-vendor-images"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("vendor_images").select("*");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   useEffect(() => {
     if (location.hash === "#register") {
       setTimeout(() => document.getElementById("register")?.scrollIntoView({ behavior: "smooth" }), 300);
     }
   }, [location]);
 
-  const onSubmit = (data: VendorForm) => {
-    const body = Object.entries(data)
-      .filter(([, v]) => v)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join("\n");
-    window.location.href = `mailto:info@zeedigitalsolutions.com?subject=${encodeURIComponent("Vendor Application: " + data.businessName)}&body=${encodeURIComponent(body)}`;
-  };
+  const submitMutation = useMutation({
+    mutationFn: async (data: VendorForm) => {
+      const { error } = await supabase.from("vendors").insert({
+        business_name: data.businessName,
+        category: data.category,
+        description: data.description,
+        contact_name: data.contactName,
+        phone: data.phone,
+        email: data.email,
+        instagram: data.instagram || "",
+        facebook: data.facebook || "",
+        website: data.website || "",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Application Submitted!", description: "We'll review your application and get back to you soon." });
+      form.reset();
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const featuredVendors = approvedVendors.filter((v) => v.is_featured);
+  const regularVendors = approvedVendors.filter((v) => !v.is_featured);
 
   return (
     <Layout>
-      {/* Hero */}
       <section className="py-16 bg-foreground text-primary-foreground">
         <div className="container text-center">
           <h1 className="font-display text-5xl md:text-6xl mb-4">OUR <span className="text-primary">VENDORS</span></h1>
@@ -75,36 +97,61 @@ const Vendors = () => {
       </section>
 
       {/* Featured Vendors */}
-      <section className="py-16 bg-card">
-        <div className="container">
-          <h2 className="font-display text-3xl text-center mb-8">FEATURED <span className="text-primary">VENDORS</span></h2>
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            {mockVendors.filter(v => v.featured).map((v, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                className="bg-background border border-border rounded-lg p-6 text-center relative">
-                <Star className="absolute top-3 right-3 text-secondary" size={20} fill="currentColor" />
-                <h3 className="font-display text-2xl text-foreground">{v.name}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{v.category}</p>
-              </motion.div>
-            ))}
+      {featuredVendors.length > 0 && (
+        <section className="py-16 bg-card">
+          <div className="container">
+            <h2 className="font-display text-3xl text-center mb-8">FEATURED <span className="text-primary">VENDORS</span></h2>
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              {featuredVendors.map((v) => {
+                const images = vendorImages.filter((vi) => vi.vendor_id === v.id);
+                return (
+                  <motion.div key={v.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                    className="bg-background border-2 border-secondary/40 rounded-lg overflow-hidden hover:shadow-lg hover:shadow-secondary/10 transition-all">
+                    {images.length > 0 ? (
+                      <img src={images[0].image_url} alt={v.business_name} className="w-full h-48 object-cover" />
+                    ) : (
+                      <div className="h-48 bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                        <span className="font-display text-4xl text-foreground/20">{v.business_name[0]}</span>
+                      </div>
+                    )}
+                    <div className="p-5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Star size={16} className="text-secondary fill-secondary" />
+                        <span className="text-xs font-display text-secondary">FEATURED</span>
+                      </div>
+                      <h3 className="font-display text-2xl text-foreground">{v.business_name}</h3>
+                      <p className="text-sm text-muted-foreground mt-1">{v.category}</p>
+                      {v.description && <p className="text-sm text-muted-foreground mt-2">{v.description}</p>}
+                      <div className="flex gap-2 mt-3">
+                        {v.instagram && <a href={`https://instagram.com/${v.instagram.replace("@", "")}`} target="_blank" rel="noopener noreferrer"><Instagram size={16} className="text-primary" /></a>}
+                        {v.facebook && <a href={v.facebook} target="_blank" rel="noopener noreferrer"><Facebook size={16} className="text-primary" /></a>}
+                        {v.website && <a href={v.website} target="_blank" rel="noopener noreferrer"><Globe size={16} className="text-primary" /></a>}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* All Vendors */}
-      <section className="py-12 bg-background">
-        <div className="container">
-          <h2 className="font-display text-3xl text-center mb-8">ALL <span className="text-primary">VENDORS</span></h2>
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
-            {mockVendors.map((v, i) => (
-              <div key={i} className="border border-border rounded-lg p-4">
-                <h3 className="font-display text-xl text-foreground">{v.name}</h3>
-                <p className="text-sm text-muted-foreground">{v.category}</p>
-              </div>
-            ))}
+      {regularVendors.length > 0 && (
+        <section className="py-12 bg-background">
+          <div className="container">
+            <h2 className="font-display text-3xl text-center mb-8">ALL <span className="text-primary">VENDORS</span></h2>
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+              {regularVendors.map((v) => (
+                <div key={v.id} className="border border-border rounded-lg p-4">
+                  <h3 className="font-display text-xl text-foreground">{v.business_name}</h3>
+                  <p className="text-sm text-muted-foreground">{v.category}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Registration Form */}
       <section id="register" className="py-20 bg-card">
@@ -114,7 +161,7 @@ const Vendors = () => {
             <p className="text-center text-muted-foreground mb-8">Fill out the form below to apply. We'll review your application and get back to you!</p>
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+              <form onSubmit={form.handleSubmit((d) => submitMutation.mutate(d))} className="space-y-5">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <FormField control={form.control} name="businessName" render={({ field }) => (
                     <FormItem><FormLabel>Business Name *</FormLabel><FormControl><Input placeholder="Your Business" {...field} /></FormControl><FormMessage /></FormItem>
@@ -154,8 +201,8 @@ const Vendors = () => {
                     <FormItem><FormLabel className="flex items-center gap-1"><Globe size={14} /> Website</FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl></FormItem>
                   )} />
                 </div>
-                <Button type="submit" size="lg" className="w-full font-display text-lg tracking-wider">
-                  <Send size={18} className="mr-2" /> Submit Application
+                <Button type="submit" size="lg" className="w-full font-display text-lg tracking-wider" disabled={submitMutation.isPending}>
+                  <Send size={18} className="mr-2" /> {submitMutation.isPending ? "Submitting..." : "Submit Application"}
                 </Button>
               </form>
             </Form>
