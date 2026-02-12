@@ -38,11 +38,22 @@ const Footer = () => (
         </div>
       </div>
     </div>
-    <div className="container mt-8 pt-6 border-t border-primary-foreground/10 flex items-center justify-between text-xs text-primary-foreground/40">
-      <span>© {new Date().getFullYear()} Triple C Events. All rights reserved.</span>
-      <Link to="/admin" className="flex items-center gap-1 hover:text-primary transition-colors">
-        <Lock size={12} /> Admin
-      </Link>
+    <div className="container mt-8 pt-6 border-t border-primary-foreground/10 text-xs text-primary-foreground/40">
+      <div className="flex items-center justify-between mb-4">
+        <span>© {new Date().getFullYear()} Triple C Events. All rights reserved.</span>
+        <Link to="/admin" className="flex items-center gap-1 hover:text-primary transition-colors">
+          <Lock size={12} /> Admin
+        </Link>
+      </div>
+      <div className="flex flex-wrap items-center justify-center gap-4 text-primary-foreground/30 text-[11px]">
+        <span>Built by <strong className="text-primary-foreground/50">Zee Digital Solutions</strong></span>
+        <a href="mailto:info@zeedigitalsolutions.com" className="flex items-center gap-1 hover:text-primary transition-colors">
+          <Mail size={10} /> info@zeedigitalsolutions.com
+        </a>
+        <a href="https://wa.me/923188281135" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary transition-colors">
+          <Phone size={10} /> +92-318-828-1135
+        </a>
+      </div>
     </div>
   </footer>
 );

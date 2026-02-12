@@ -8,6 +8,7 @@ import UpcomingEvents from "@/components/home/UpcomingEvents";
 import GallerySection from "@/components/home/GallerySection";
 import RaffleSection from "@/components/home/RaffleSection";
 import ContactSection from "@/components/home/ContactSection";
+import EventManagementCTA from "@/components/home/EventManagementCTA";
 
 const Index = () => (
   <Layout>
@@ -19,6 +20,7 @@ const Index = () => (
     <UpcomingEvents />
     <GallerySection />
     <RaffleSection />
+    <EventManagementCTA />
     <ContactSection />
   </Layout>
 );
