@@ -14,16 +14,256 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      events: {
+        Row: {
+          address: string | null
+          created_at: string
+          date: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_past: boolean
+          ticket_link: string | null
+          time_end: string | null
+          time_start: string | null
+          title: string
+          venue: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          date: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_past?: boolean
+          ticket_link?: string | null
+          time_end?: string | null
+          time_start?: string | null
+          title: string
+          venue?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_past?: boolean
+          ticket_link?: string | null
+          time_end?: string | null
+          time_start?: string | null
+          title?: string
+          venue?: string | null
+        }
+        Relationships: []
+      }
+      gallery_images: {
+        Row: {
+          alt_text: string | null
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url: string
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string
+        }
+        Relationships: []
+      }
+      site_content: {
+        Row: {
+          content: Json | null
+          id: string
+          section_key: string
+          subtitle: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          content?: Json | null
+          id?: string
+          section_key: string
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: Json | null
+          id?: string
+          section_key?: string
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sponsors: {
+        Row: {
+          company_name: string
+          contact_person: string | null
+          created_at: string
+          email: string | null
+          id: string
+          logo_url: string | null
+          message: string | null
+          phone: string | null
+          status: Database["public"]["Enums"]["vendor_status"]
+          tier: Database["public"]["Enums"]["sponsor_tier"]
+        }
+        Insert: {
+          company_name: string
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          message?: string | null
+          phone?: string | null
+          status?: Database["public"]["Enums"]["vendor_status"]
+          tier?: Database["public"]["Enums"]["sponsor_tier"]
+        }
+        Update: {
+          company_name?: string
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          message?: string | null
+          phone?: string | null
+          status?: Database["public"]["Enums"]["vendor_status"]
+          tier?: Database["public"]["Enums"]["sponsor_tier"]
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vendor_images: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_images_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendors: {
+        Row: {
+          business_name: string
+          category: string
+          contact_name: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          facebook: string | null
+          id: string
+          instagram: string | null
+          is_featured: boolean
+          phone: string | null
+          status: Database["public"]["Enums"]["vendor_status"]
+          website: string | null
+        }
+        Insert: {
+          business_name: string
+          category?: string
+          contact_name?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          facebook?: string | null
+          id?: string
+          instagram?: string | null
+          is_featured?: boolean
+          phone?: string | null
+          status?: Database["public"]["Enums"]["vendor_status"]
+          website?: string | null
+        }
+        Update: {
+          business_name?: string
+          category?: string
+          contact_name?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          facebook?: string | null
+          id?: string
+          instagram?: string | null
+          is_featured?: boolean
+          phone?: string | null
+          status?: Database["public"]["Enums"]["vendor_status"]
+          website?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      sponsor_tier: "gold" | "silver" | "bronze"
+      vendor_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +390,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      sponsor_tier: ["gold", "silver", "bronze"],
+      vendor_status: ["pending", "approved", "rejected"],
+    },
   },
 } as const
