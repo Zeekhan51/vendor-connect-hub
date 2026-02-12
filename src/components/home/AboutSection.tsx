@@ -38,7 +38,7 @@ const AboutSection = () => (
             <img
               src={christinaImg}
               alt="Christina - Owner of Triple C Events"
-              className="w-full h-full object-cover object-[center_35%]"
+              className="w-full h-full object-cover object-[center_65%]"
             />
           </div>
         </motion.div>
